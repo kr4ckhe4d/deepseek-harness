@@ -1,0 +1,438 @@
+/* Every color resolves through a `--dsw-alias-*` or `--dsw-static-*` token;
+ * heatmap and chart intensities derive from the brand token with color-mix
+ * so both themes stay coherent. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 720px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+}
+
+.intro {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* Tab and range rows: one segmented control each, wrapping apart on narrow
+   panels instead of shrinking below a legible label. */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tabs,
+.ranges {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-module-platform);
+}
+
+.control {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.control:hover:not([aria-selected='true']):not([aria-pressed='true']) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.control[aria-selected='true'],
+.control[aria-pressed='true'] {
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font-weight: 500;
+}
+
+.control:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--dsw-alias-border-l3);
+}
+
+.tabBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Overview stat cards: four per row, two per row on narrow panels. */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .statGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+}
+
+.statLabel {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.statValue {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+  overflow-wrap: anywhere;
+}
+
+/* Calendar heatmap: weekday column on the left, month labels above the
+   Sunday-aligned week columns, horizontal scroll on narrow panels. */
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heatmapCaption,
+.chartCaption {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.heatmapBody {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+
+  /* The heatmap scrolls inside an elevated surface (the segmented controls
+     above it carry the module fill), so the scrollbar indirection is rebound
+     here rather than on the scrolling child (see ui-theme scrollbar.css). */
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+.heatmapWeekdays {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: none;
+}
+
+.heatmapMonthSpacer {
+  height: 16px;
+  flex: none;
+}
+
+.heatmapWeekday {
+  width: 12px;
+  height: 10px;
+  font-size: 9px;
+  line-height: 10px;
+  text-align: center;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.heatmapColumns {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+.heatmapColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heatmapMonth {
+  height: 16px;
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+  white-space: nowrap;
+}
+
+.heatmapDays {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heatmapCell {
+  box-sizing: border-box;
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.heatmapCellEmpty {
+  box-sizing: border-box;
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.heatmapLevel0 {
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.heatmapLevel1 {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 22%, var(--dsw-alias-bg-base));
+}
+
+.heatmapLevel2 {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, var(--dsw-alias-bg-base));
+}
+
+.heatmapLevel3 {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, var(--dsw-alias-bg-base));
+}
+
+.heatmapLevel4 {
+  background: var(--dsw-alias-brand-primary);
+}
+
+.heatmapLegend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  align-self: flex-end;
+}
+
+.heatmapLegendText {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* Weekly bar chart: the SVG scales with the panel; axis chrome stays muted. */
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chartSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.gridline {
+  stroke: var(--dsw-alias-border-l2);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  fill: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+}
+
+/* Model legend table: swatch, id, input/output totals, and share. */
+.modelList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.modelRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.modelRow:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.swatch {
+  box-sizing: border-box;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.modelName {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--ds-font-family-code);
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+  overflow-wrap: anywhere;
+}
+
+.modelTokens {
+  flex: none;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+}
+
+.modelShare {
+  flex: none;
+  min-width: 52px;
+  text-align: right;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.showMore {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.showMore:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.noUsage {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--dsw-alias-border-l3);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.secondaryButton {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  gap: 4px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.secondaryButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+}
+
+/* Chart and legend palette: a fixed series of design-token colors assigned by
+   usage-share rank, so one model keeps its color between chart and table. */
+.series0 {
+  fill: var(--dsw-static-deepseek-500);
+  background: var(--dsw-static-deepseek-500);
+}
+
+.series1 {
+  fill: var(--dsw-static-deepseek-300);
+  background: var(--dsw-static-deepseek-300);
+}
+
+.series2 {
+  fill: var(--dsw-static-neutral-600);
+  background: var(--dsw-static-neutral-600);
+}
+
+.series3 {
+  fill: var(--dsw-static-deepseek-700-delete);
+  background: var(--dsw-static-deepseek-700-delete);
+}
+
+.series4 {
+  fill: var(--dsw-static-deepseek-200);
+  background: var(--dsw-static-deepseek-200);
+}
+
+.series5 {
+  fill: var(--dsw-static-neutral-400);
+  background: var(--dsw-static-neutral-400);
+}
+
+.series6 {
+  fill: var(--dsw-static-deepseek-800);
+  background: var(--dsw-static-deepseek-800);
+}
+
+.series7 {
+  fill: var(--dsw-static-neutral-700);
+  background: var(--dsw-static-neutral-700);
+}

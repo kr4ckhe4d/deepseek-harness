@@ -40,6 +40,8 @@ export const en = {
   'json.label': 'JSON',
   'markdown.footnotes': 'Footnotes',
   'markdown.truncatedCharacters': '… truncated at {total} characters',
+  'number.groupSeparator': ',',
   'number.thousand': '{value}K',
   'number.million': '{value}M',
+  'number.billion': '{value}B',
 } satisfies Record<CommonKey, string>

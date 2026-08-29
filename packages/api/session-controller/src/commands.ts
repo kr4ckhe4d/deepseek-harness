@@ -582,7 +582,8 @@ function referencedImage(
 
 const IANA_TIME_ZONE = /^[A-Za-z][A-Za-z0-9_+.-]*(?:\/[A-Za-z0-9_+.-]+)+$/
 
-function canonicalClientTimeZone(value: string): string | undefined {
+/** Normalize one client-supplied time zone to its canonical IANA name, or undefined when invalid. */
+export function canonicalClientTimeZone(value: string): string | undefined {
   if (value.length === 0 || value.trim() !== value
     || (value !== 'UTC' && !IANA_TIME_ZONE.test(value))) return undefined
   try {

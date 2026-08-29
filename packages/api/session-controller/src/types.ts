@@ -547,3 +547,81 @@ declare module '@deepseek-ai/cordis' {
 
 /** JSON-compatible projection value accepted by list consumers. */
 export type SessionProjectionValue = JsonValue
+
+/** Time-range filter for the usage-statistics settings section. */
+export type SessionUsageRange = 'all' | '30d' | '7d'
+
+/** Request for corpus-wide model usage statistics. */
+export interface SessionUsageRequest {
+  readonly range: SessionUsageRange
+  /**
+   * IANA time zone used for local-day, local-hour, and weekly bucketing.
+   * Absent falls back to `UTC`.
+   */
+  readonly timeZone?: string
+}
+
+/** One model's aggregated usage within the requested range. */
+export interface SessionUsageModel {
+  /** Model id as recorded on the request (e.g. `deepseek-chat`). */
+  readonly model: string
+  /** Summed uncached input tokens over usage-reporting assistant steps. */
+  readonly inputTokens: number
+  /** Summed output tokens over usage-reporting assistant steps. */
+  readonly outputTokens: number
+  /** Assistant messages attributed to this model (usage-reporting or not). */
+  readonly messages: number
+}
+
+/** One local calendar day's usage within the requested range. */
+export interface SessionUsageDay {
+  /** Local date key in the requested time zone, `YYYY-MM-DD`. */
+  readonly date: string
+  /** Billed tokens (uncached input + cache + output) that day. */
+  readonly tokens: number
+  /** User and assistant messages that day. */
+  readonly messages: number
+}
+
+/** One model's token share of one weekly bucket. */
+export interface SessionUsageWeekModel {
+  readonly model: string
+  readonly tokens: number
+}
+
+/** One weekly token bucket split by model. */
+export interface SessionUsageWeek {
+  /** Local Sunday-start date key of the bucket, `YYYY-MM-DD`. */
+  readonly start: string
+  /** Per-model billed-token totals within the bucket (nonzero entries only). */
+  readonly models: readonly SessionUsageWeekModel[]
+}
+
+/** Corpus-wide model usage statistics within the requested range. */
+export interface SessionUsageValue {
+  readonly range: SessionUsageRange
+  /** Epoch-ms cut of the range start; 0 for `all`. */
+  readonly rangeStart: number
+  /** Distinct visible sessions carrying at least one message in the range. */
+  readonly sessions: number
+  /** User and assistant surface messages in the range. */
+  readonly messages: number
+  /** Billed tokens (uncached input + cache + output) in the range. */
+  readonly totalTokens: number
+  /** Local days with at least one message in the range. */
+  readonly activeDays: number
+  /** Consecutive active local days ending today; 0 when today is inactive or outside the range. */
+  readonly currentStreak: number
+  /** Longest run of consecutive active local days within the range window. */
+  readonly longestStreak: number
+  /** Local hour (0–23) with the most messages in the range; 0 when the range has no messages. */
+  readonly peakHour: number
+  /** Model with the most tokens in the range; null when the range has no usage. */
+  readonly favoriteModel: string | null
+  /** Per-local-day totals spanning the range window (bounded to 364 days for `all`). */
+  readonly days: readonly SessionUsageDay[]
+  /** Weekly per-model token buckets spanning the range window. */
+  readonly weeks: readonly SessionUsageWeek[]
+  /** Per-model aggregates sorted by billed-token total descending. */
+  readonly models: readonly SessionUsageModel[]
+}

@@ -244,6 +244,21 @@ export class FakeApiClient {
         page: request => this.page(request),
         follow: (request, signal) => this.openFollow(request, signal),
         control: signal => this.openControl(signal),
+        usage: () => Promise.resolve(remoteOk({
+          range: 'all',
+          rangeStart: 0,
+          sessions: 0,
+          messages: 0,
+          totalTokens: 0,
+          activeDays: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+          peakHour: 0,
+          favoriteModel: null,
+          days: [],
+          weeks: [],
+          models: [],
+        })),
       },
       subagents: {
         list: parentSessionId => this.record(
