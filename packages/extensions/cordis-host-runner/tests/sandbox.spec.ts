@@ -39,6 +39,24 @@ describe('dynamic tool declaration boundary', () => {
     })
     expect(() => definition.output.render({}, 'ok')).toThrow(/output\.render returned \["x+…/)
   })
+
+  it.each([
+    ['image', { type: 'image', mimeType: 'image/png', data: 'iVBORw0KGgo=' }, 'an image block carries a durable attachment reference that only the attachment service can issue'],
+    ['tool-call', { type: 'tool-call', id: 'c1', name: 'x', arguments: '{}' }, 'tool-call records are written by the agent loop'],
+    ['tool-result', { type: 'tool-result', toolCallId: 'c1', content: [] }, 'tool-result records are written by the agent loop'],
+  ])('rejects a rendered %s block the sandbox cannot mint', (type, block, reason) => {
+    const definition = sandboxDefineTool({
+      name: 'unmintable-renderer',
+      description: 'unmintable renderer',
+      parameters: {},
+      output: {
+        schema: { type: 'json' },
+        render: () => [block],
+      },
+      execute: async () => 'ok',
+    })
+    expect(() => definition.output.render({}, 'ok')).toThrow(`output.render returned a '${type}' block — ${reason}`)
+  })
 })
 
 describe('sandbox isolation and Node-API traps', () => {

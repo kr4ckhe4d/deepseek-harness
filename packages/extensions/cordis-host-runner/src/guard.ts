@@ -527,10 +527,33 @@ function describeReturn(value: JsonValue): string {
 }
 
 /**
+ * Core block tags a sandbox renderer must never mint, mapped to the teaching
+ * reason. These pass {@link isContentBlockShape} on their `type` tag alone
+ * while missing the field their consumers dereference — an `image` without the
+ * attachment reference only the attachment service can issue faults in the LLM
+ * request layer, far from the renderer that produced it. Rejecting them here
+ * keeps the failure at registration, where the plugin author can act on it.
+ */
+const UNMINTABLE_BLOCK_TYPES = new Map<string, string>([
+  ['image', 'an image block carries a durable attachment reference that only the attachment service can issue'],
+  ['tool-call', 'tool-call records are written by the agent loop'],
+  ['tool-result', 'tool-result records are written by the agent loop'],
+])
+
+/**
  * Validate and host-materialize a sandbox renderer's content blocks.
  */
 function assertRenderedContent(value: JsonValue): ContentBlock[] {
   if (Array.isArray(value) && value.every(isContentBlockShape)) {
+    for (const block of value as { type: string }[]) {
+      const reason = UNMINTABLE_BLOCK_TYPES.get(block.type)
+      if (reason !== undefined) {
+        throw new Error(
+          `output.render returned a '${block.type}' block — ${reason}.\n`
+          + '  ✓ return [{ type: \'text\', text: … }] instead, e.g. the path the bytes were written to',
+        )
+      }
+    }
     return value as unknown as ContentBlock[]
   }
   throw new Error(
