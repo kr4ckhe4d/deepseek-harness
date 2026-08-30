@@ -127,7 +127,7 @@ describe('SearxngSearchProvider error handling', () => {
   it('maps a rate-limited HTML response to WEB_PROVIDER_ERROR with a limiter hint', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => htmlResponse('rate limited', { status: 429 })))
     await expect(new SearxngSearchProvider(options).search({ query: 'q' }))
-      .rejects.toThrow(expect.objectContaining({ code: 'WEB_PROVIDER_ERROR', message: expect.stringContaining('rate-limited') }))
+      .rejects.toThrow(expect.objectContaining({ code: 'WEB_PROVIDER_ERROR', message: expect.stringContaining('rate-limited') as string }))
   })
 
   it('hints at search.formats for a 403 HTML response', async () => {
@@ -135,7 +135,7 @@ describe('SearxngSearchProvider error handling', () => {
     await expect(new SearxngSearchProvider(options).search({ query: 'q' }))
       .rejects.toThrow(expect.objectContaining({
         code: 'WEB_PROVIDER_ERROR',
-        message: expect.stringContaining('search.formats'),
+        message: expect.stringContaining('search.formats') as string,
       }))
   })
 
@@ -150,7 +150,7 @@ describe('SearxngSearchProvider error handling', () => {
     await expect(new SearxngSearchProvider(options).search({ query: 'q' }))
       .rejects.toThrow(expect.objectContaining({
         code: 'WEB_PROVIDER_ERROR',
-        message: expect.stringContaining('search.formats'),
+        message: expect.stringContaining('search.formats') as string,
       }))
   })
 
@@ -191,7 +191,7 @@ describe('SearxngSearchProvider error handling', () => {
     const body = { json: () => { throw new Error('must not be called') }, ok: false, status: 500, headers: new Headers({ 'content-type': 'text/html' }) }
     vi.stubGlobal('fetch', vi.fn(async () => body as unknown as Response))
     await expect(new SearxngSearchProvider(options).search({ query: 'q' }))
-      .rejects.toThrow(expect.objectContaining({ code: 'WEB_PROVIDER_ERROR', message: expect.stringContaining('HTTP 500') }))
+      .rejects.toThrow(expect.objectContaining({ code: 'WEB_PROVIDER_ERROR', message: expect.stringContaining('HTTP 500') as string }))
   })
 })
 

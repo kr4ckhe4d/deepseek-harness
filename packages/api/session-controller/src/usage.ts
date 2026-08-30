@@ -15,8 +15,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-session-query'
-import { TypertRemoteFailure } from '@deepseek-ai/dsh-typert-protocol'
-import { canonicalClientTimeZone } from './commands.ts'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
+import { canonicalClientTimeZone } from '@deepseek-ai/dsh-util-time'
 import type {
   SessionUsageDay, SessionUsageModel, SessionUsageRange, SessionUsageRequest,
   SessionUsageValue, SessionUsageWeek, SessionUsageWeekModel,
@@ -332,14 +332,14 @@ export class SessionUsageController {
    */
   async usage(request: SessionUsageRequest, signal: AbortSignal): Promise<SessionUsageValue> {
     if (!RANGE_VALUES.has(request.range)) {
-      reject('bad-request', 'session usage range must be "all", "30d", or "7d"', {})
+      throw new RemoteError('gateway/bad-request', 'session usage range must be "all", "30d", or "7d"', {})
     }
     let timeZone = 'UTC'
     if (request.timeZone !== undefined) {
       const canonical = canonicalClientTimeZone(request.timeZone)
       if (canonical === undefined) {
-        reject(
-          'invalid-time-zone',
+        throw new RemoteError(
+          'session/invalid-time-zone',
           'timeZone must be UTC or a valid IANA Area/Location name',
           { value: request.timeZone },
         )
@@ -407,8 +407,4 @@ export class SessionUsageController {
     /* v8 ignore stop */
     return sources
   }
-}
-
-function reject(code: string, message: string, details: object): never {
-  throw new TypertRemoteFailure({ code, message, details })
 }

@@ -268,9 +268,9 @@ describe('SessionUsageController.usage', () => {
   it('validates the range and time zone', async () => {
     const controller = bench({})
     await expect(controller.usage({ range: 'year' } as unknown as SessionUsageRequest, new AbortController().signal))
-      .rejects.toMatchObject({ failure: { code: 'bad-request' } })
+      .rejects.toMatchObject({ code: 'gateway/bad-request' })
     await expect(controller.usage({ range: 'all', timeZone: 'Mars/Olympus' }, new AbortController().signal))
-      .rejects.toMatchObject({ failure: { code: 'invalid-time-zone' } })
+      .rejects.toMatchObject({ code: 'session/invalid-time-zone' })
   })
 
   it('aggregates visible sessions in the requested time zone', async () => {
