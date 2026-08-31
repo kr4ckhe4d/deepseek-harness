@@ -123,6 +123,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'conversation.hero.brand.mark': { kind: 'single'; scope: 'root'; owner: HeroBrandMarkOwnerProps }
     /** Agent-preset control staged for a New Session. */
     'conversation.hero.agentPreset': { kind: 'single'; scope: 'root'; owner: HeroAgentPresetOwnerProps }
+    /** Optional dashboard card under the blank-session composer. */
+    'conversation.hero.dashboard': { kind: 'single'; scope: 'root'; owner: HeroDashboardOwnerProps }
     /** Full-width entries above the composer card. */
     'conversation.input.dock': { kind: 'list'; scope: 'session'; owner: InputZone }
     /** Floating entries rendered inside the resident composer card. */
@@ -216,8 +218,12 @@ export type ConvViewProps = PropsRuntime<'conversation.view'>
 export interface ConversationInjected {
   /** Connect and open a blank Session in the selected Workspace. */
   selectWorkspace: (workspaceId: WorkspaceId) => Promise<void>
-  /** Session-addressed composer block source, or the stable absent source. */
-  hooks: { composerBlock: ObservableSnapshot<ComposerBlock | undefined> }
+  hooks: {
+    /** Session-addressed composer block source, or the stable absent source. */
+    composerBlock: ObservableSnapshot<ComposerBlock | undefined>
+    /** Display name from the durable profile section; undefined when unset. */
+    greetingName: ObservableSnapshot<string | undefined>
+  }
 }
 
 /** Business callbacks injected into the strict Session body. */
@@ -307,6 +313,12 @@ export interface ComposerChainProps {
   pendingInteraction: SessionPendingInteraction | undefined
 }
 
+/** Owner share of the hero dashboard seat (the shell supplies nothing). */
+export interface HeroDashboardOwnerProps {
+  /** Marker field: dashboard owner props are intentionally empty. */
+  children?: never
+}
+
 /** Presentation props supplied to the blank-session brand mark. */
 export interface HeroBrandMarkOwnerProps {
   /** Requested square edge in pixels. */
@@ -327,6 +339,7 @@ export type ConversationSlotProps =
     | 'conversation.hero.brand.mark'
     | 'conversation.hero.workspace'
     | 'conversation.hero.agentPreset'
+    | 'conversation.hero.dashboard'
   >
   & InjectFace<ConversationInjected>
   & PropsLocale<'conversation'>

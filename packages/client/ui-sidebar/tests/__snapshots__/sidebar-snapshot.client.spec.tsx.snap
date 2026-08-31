@@ -189,6 +189,11 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
       >
         New Session
       </span>
+      <kbd
+        class="newSessionKbd"
+      >
+        Ctrl+N
+      </kbd>
     </button>
     <div
       class="regionArea"
@@ -319,6 +324,11 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
       >
         新会话
       </span>
+      <kbd
+        class="newSessionKbd"
+      >
+        Ctrl+N
+      </kbd>
     </button>
     <div
       class="regionArea"

@@ -31,16 +31,24 @@ const useSessionPendingInteraction: TriggerContentProps['useSessionPendingIntera
 const kit = { useSessions: unusedHook, useSessionPendingInteraction, useWorkspaces: unusedHook }
 
 describe('chrome content', () => {
-  it('TriggerContent renders the icon with the label in the wide column', () => {
+  it('TriggerContent renders the anonymous account row in the wide column', () => {
     const { container } = render(<TriggerContent {...kit} wide t={t} />)
+    // No name yet: the avatar chip holds the generic user glyph.
     expect(container.querySelector('svg')).toBeTruthy()
-    expect(screen.getByText('Settings')).toBeTruthy()
+    expect(screen.getByText('Local user')).toBeTruthy()
+  })
+
+  it('TriggerContent shows the initials avatar with the display name', () => {
+    const { container } = render(<TriggerContent {...kit} wide name="Nipuna Herath" t={t} />)
+    expect(container.querySelector('svg')).toBeNull()
+    expect(screen.getByText('NH')).toBeTruthy()
+    expect(screen.getByText('Nipuna Herath')).toBeTruthy()
   })
 
   it('TriggerContent drops the label in the rail state', () => {
     const { container } = render(<TriggerContent {...kit} wide={false} t={t} />)
     expect(container.querySelector('svg')).toBeTruthy()
-    expect(screen.queryByText('Settings')).toBeNull()
+    expect(screen.queryByText('Local user')).toBeNull()
   })
 
   it('HeaderContent and CloseLabel render their translated text', () => {

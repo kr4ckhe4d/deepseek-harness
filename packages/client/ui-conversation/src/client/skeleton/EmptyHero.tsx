@@ -3,11 +3,13 @@
 
 import { useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
+import clsx from 'clsx'
 import {
   FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconChevronDownOutline14, IconFolderClose16, IconFolderOpen16,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { workspaceTitleOf } from '@deepseek-ai/dsh-util-workspace-path'
 import type { ConversationSlotProps } from '../contract/slots.ts'
+import { greetingKeyFor } from './greeting.ts'
 import css from './HeroShell.module.css'
 
 /** The owner's locale seat type, passed to hero chrome as a plain prop. */
@@ -67,6 +69,8 @@ export interface HeroShellProps {
   t: HeroTranslate
   /** Authorized renderer for the hero brand-mark slot. */
   renderSlot: ConversationSlotProps['renderSlot']
+  /** Profile display name; set switches the headline to a personal greeting. */
+  greetingName?: string | undefined
   /** Overlay content after the stack (modals). */
   children?: ReactNode
 }
@@ -129,8 +133,13 @@ function HeroFish({ hovering }: { hovering: boolean }) {
  * @param props - see {@link HeroShellProps}.
  * @returns the centered hero element tree.
  */
-export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
+export function HeroShell({ t, renderSlot, greetingName, children }: HeroShellProps) {
   const [hovering, setHovering] = useState(false)
+  // Sampled per render: the hero remounts on navigation, and band drift
+  // within one mounted view is not worth a timer.
+  const greeting = greetingName === undefined
+    ? undefined
+    : t(greetingKeyFor(new Date()), { name: greetingName })
   return (
     <div className={css.root}>
       <div className={css.stack}>
@@ -149,10 +158,14 @@ export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
               fallback: <HeroFish hovering={hovering} />,
             })}
           </span>
-          <span className={css.headlineText}>
-            {t('hero.headline')}
-          </span>
-          <span className={css.previewBadge}>{t('hero.preview')}</span>
+          {greeting === undefined
+            ? (
+              <span className={css.headlineText}>
+                {t('hero.headline')}
+              </span>
+            )
+            : <span className={clsx(css.headlineText, css.greeting)}>{greeting}</span>}
+          {greeting === undefined && <span className={css.previewBadge}>{t('hero.preview')}</span>}
         </div>
         <div className={css.body}>
           {/* The composer remains mounted outside this component. */}

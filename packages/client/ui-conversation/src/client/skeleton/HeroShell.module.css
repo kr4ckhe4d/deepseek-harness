@@ -43,6 +43,16 @@
   grid-column: 2;
 }
 
+/* Personalized greeting: a serif headline, one size up from the stock title
+   (the desktop-style home). The fish keeps its column. */
+.greeting {
+  font-family: 'Iowan Old Style', Georgia, 'Songti SC', 'Noto Serif SC', 'Times New Roman', serif;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
 .previewBadge {
   grid-row: 1;
   grid-column: 3;

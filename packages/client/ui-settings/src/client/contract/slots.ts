@@ -105,6 +105,8 @@ export interface SettingsPluginsTabOwnerProps {
 export interface SettingsTriggerOwnerProps {
   /** Whether the sidebar renders wide content (false = 56px rail, icon only). */
   wide: boolean
+  /** Display name the shell resolved from the profile section; absent when unset. */
+  name?: string | undefined
 }
 
 /** Owner share of the header title seat (the shell supplies nothing). */

@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-client-ui-settings-usage` is the Model usage settings page of the dsh web client: it reads the Host's aggregated view of every visible session log and shows what you have been doing with models. The Overview tab renders eight stat cards — sessions, messages, total tokens, active days, current and longest streaks, peak hour, and favorite model — plus a GitHub-style calendar heatmap of daily token volume. The Models tab renders a stacked weekly bar chart split by model and a legend table with each model's input/output token totals and share of usage. A time-range filter (All / 30d / 7d) applies to both tabs, and every figure is bucketed in your browser's time zone.
+`dsh-client-ui-settings-usage` is the Model usage settings page of the dsh web client: it reads the Host's aggregated view of every visible session log and shows what you have been doing with models. The Overview tab renders eight stat cards — sessions, messages, total tokens, active days, current and longest streaks, peak hour, and favorite model — plus a GitHub-style calendar heatmap of daily token volume. The Models tab renders a stacked weekly bar chart split by model and a legend table with each model's input/output token totals and share of usage. A time-range filter (All / 30d / 7d) applies to both tabs, and every figure is bucketed in your browser's time zone. The same store also fills the blank-session hero's `conversation.hero.dashboard` seat with a compact card of both tabs, so the home view and the Settings page always agree.
 
 ## Table of Contents
 

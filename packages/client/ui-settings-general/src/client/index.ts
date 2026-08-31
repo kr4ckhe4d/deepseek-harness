@@ -29,6 +29,10 @@ import { GeneralSection } from './GeneralSection.tsx'
 import { SettingsDocumentAction } from './SettingsDocumentAction.tsx'
 import type { SettingsDocumentActionInjected } from './SettingsDocumentAction.tsx'
 import { SettingsDocumentStore } from './settings-document-store.ts'
+import { ProfileRow } from './ProfileRow.tsx'
+import type { ProfileRowInjected } from './ProfileRow.tsx'
+import { PROFILE_SETTINGS_NAMESPACE } from '../profile-settings.ts'
+import type { ProfileSettings } from '../profile-settings.ts'
 import { en, zh, type SettingsKey } from './locales.ts'
 
 export type {
@@ -72,6 +76,13 @@ export function apply(ctx: ClientContext): void {
   // seat, and the nav label is a thunk the owner resolves per render — no
   // locale/change re-registration wiring.
   const t = ctx.locale.bind(NS)
+  // The durable profile section this package owns; the account row and the
+  // General Profile rows read the same scope.
+  const profileScope = ctx.settingsScope.bind<ProfileSettings>({ namespace: PROFILE_SETTINGS_NAMESPACE })
+  const profileObservable = {
+    getSnapshot: () => profileScope.getSnapshot().value,
+    subscribe: (listener: () => void) => profileScope.subscribe(listener),
+  }
   // The shared SettingsScope mirror updates after document commits and reconnects.
   const documentController = ctx.remote.$host.isLoopback
     ? new SettingsDocumentStore(ctx, ctx.settingsScope.describe())
@@ -141,6 +152,7 @@ export function apply(ctx: ClientContext): void {
         },
         subscribe: listener => ctx.slots.subscribe('settings.onboarding', listener),
       },
+      profile: profileObservable,
     },
   })
   ctx.slots.inject('sidebar.settings', () => ctx.slots.register({
@@ -170,6 +182,22 @@ export function apply(ctx: ClientContext): void {
       inject: documentInjected,
     }, SettingsDocumentAction))
   }
+  const profileInjected = (): ProfileRowInjected => ({
+    hooks: {
+      profile: {
+        getSnapshot: () => profileScope.getSnapshot().value ?? { fullName: '', nickname: '' },
+        subscribe: (listener: () => void) => profileScope.subscribe(listener),
+      },
+    },
+    setProfileField: (field, value) => { void profileScope.set(field, value.trim()) },
+  })
+  ctx.slots.inject('settings.general.item', () => ctx.slots.register({
+    name: 'settings.general.item',
+    id: 'profile',
+    order: 0,
+    locale: NS,
+    inject: profileInjected,
+  }, ProfileRow))
   ctx.slots.inject('settings.close', () =>
     ctx.slots.register({ name: 'settings.close', locale: NS }, CloseLabel))
   ctx.slots.inject('settings.section', () => ctx.slots.register({

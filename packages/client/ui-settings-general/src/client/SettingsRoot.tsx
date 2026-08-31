@@ -15,13 +15,18 @@ import clsx from 'clsx'
 import {
   ConnectionIndicator,
   IconAgentPresetOutline16, IconChartOutline16, IconCloseOutline16, IconDataOutline16,
-  IconPersonalizationOutline16, IconSettingsOutline16,
+  IconGlobeOutline14, IconPersonalizationOutline16, IconRightUpOutline14, IconSettingsOutline16,
+  Menu,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ConnectionIndicatorState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SettingsRootComponentProps, SettingsSectionRow } from './shell-contract.ts'
+import { displayNameOf } from '../profile-settings.ts'
 import css from './SettingsRoot.module.css'
 
 const RECOVERY_CONFIRMATION_MS = 2_000
+
+/** Where the account menu's Help row leads. */
+const HELP_URL = 'https://github.com/deepseek-ai/deepseek-harness'
 
 /** Nav glyph by section id; unknown ids fall back to the settings gear. */
 function navIcon(id: string) {
@@ -108,9 +113,11 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
  */
 export function SettingsRoot(props: SettingsRootComponentProps) {
   const {
-    wide, reconnect, useConnectionState, useSections, useOnboardingSteps, useSessions, renderSlot, t,
+    wide, reconnect, useConnectionState, useSections, useOnboardingSteps, useSessions, useProfile,
+    renderSlot, t,
   } = props
   const [open, setOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | undefined>(undefined)
   const [completedOnboarding, setCompletedOnboarding] = useState<ReadonlySet<string>>(() => new Set())
   const [showRecovery, setShowRecovery] = useState(false)
@@ -178,19 +185,54 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     connectionIndicator = 'recovered'
   }
 
+  const profileName = displayNameOf(useProfile(value => value))
+
   return (
     <>
       <div className={clsx(css.triggerRow, !wide && css.railRow)}>
-        <button
-          ref={triggerButton}
-          type="button"
-          className={clsx(css.trigger, !wide && css.rail)}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          onClick={() => { setOpen(true) }}
-        >
-          {renderSlot('settings.trigger', { wide })}
-        </button>
+        <Menu
+          open={accountOpen}
+          onClose={() => { setAccountOpen(false) }}
+          align="start"
+          side="top"
+          portal
+          items={[
+            {
+              id: 'account-settings',
+              label: t('account.settings'),
+              icon: <IconSettingsOutline16 size={14} />,
+            },
+            {
+              id: 'account-language',
+              label: t('account.language'),
+              icon: <IconGlobeOutline14 size={14} />,
+            },
+            { type: 'separator', id: 'account-separator' },
+            {
+              id: 'account-help',
+              label: t('account.help'),
+              icon: <IconRightUpOutline14 size={14} />,
+            },
+          ]}
+          onSelect={(id) => {
+            setAccountOpen(false)
+            if (id === 'account-settings') setOpen(true)
+            if (id === 'account-language') openSection('general')
+            if (id === 'account-help') window.open(HELP_URL, '_blank', 'noopener')
+          }}
+          anchor={(
+            <button
+              ref={triggerButton}
+              type="button"
+              className={clsx(css.trigger, !wide && css.rail)}
+              aria-haspopup="menu"
+              aria-expanded={accountOpen}
+              onClick={() => { setAccountOpen(value => !value) }}
+            >
+              {renderSlot('settings.trigger', { wide, name: profileName })}
+            </button>
+          )}
+        />
         <ConnectionIndicator
           state={wide ? connectionIndicator : undefined}
           disconnectedLabel={t('connection.error')}

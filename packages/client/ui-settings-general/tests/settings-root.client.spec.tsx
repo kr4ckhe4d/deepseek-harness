@@ -86,6 +86,7 @@ function mount({
       return select(currentConnectionState)
     },
     useOnboardingSteps: select => select(steps),
+    useProfile: select => select(undefined),
     useSections: (select) => {
       const [, force] = useState(0)
       useEffect(() => {
@@ -116,7 +117,9 @@ function mount({
 function openPanel() {
   const trigger = screen.getByRole('button', { name: 'Settings' })
   trigger.focus()
+  // The trigger opens the account menu; its Settings row opens the dialog.
   fireEvent.click(trigger)
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Settings' }))
   return trigger
 }
 
@@ -125,16 +128,28 @@ describe('SettingsRoot trigger', () => {
     const { renderSlot } = mount()
     const trigger = screen.getByRole('button', { name: 'Settings' })
     expect(trigger.hasAttribute('aria-label')).toBe(false)
-    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: true })
+    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: true, name: undefined })
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
+    // First click: the account menu (not the dialog yet).
     fireEvent.click(trigger)
-    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByRole('button', { name: 'Settings', expanded: true })).toBeTruthy()
+    // Its Settings row opens the dialog.
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Settings' }))
+    expect(screen.getByRole('dialog')).toBeTruthy()
+  })
+
+  it('opens the General section directly from the account menu Language row', () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Language' }))
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByTestId('section-general')).toBeTruthy()
   })
 
   it('hands the rail state to the trigger seat', () => {
     const { renderSlot } = mount({ wide: false })
-    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: false })
+    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: false, name: undefined })
   })
 
   it('shows outage, retry progress, and a two-second recovery confirmation', () => {

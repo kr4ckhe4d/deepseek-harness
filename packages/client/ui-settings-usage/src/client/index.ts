@@ -9,6 +9,8 @@
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 // Type-only: pulls the shell's SlotMap merge (the 'settings.section' entry).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+// Type-only: pulls the hero dashboard seat ('conversation.hero.dashboard').
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
@@ -16,6 +18,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // (api-session/* invalidations ride the allowlist) into this program.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import { UsageSection } from './UsageSection.tsx'
+import { HomeDashboard } from './HomeDashboard.tsx'
 import type { UsageSectionInjected } from './UsageSection.tsx'
 import { UsageStore } from './store.ts'
 import type { UsageWire } from './store.ts'
@@ -90,4 +93,11 @@ export function apply(ctx: ClientContext): void {
     label: () => t('nav'),
     inject: injected,
   }, UsageSection))
+
+  // The same store fills the blank-session hero card, so the home dashboard
+  // and the Settings page always show one aggregated view.
+  ctx.slots.inject('conversation.hero.dashboard', () => ctx.slots.register({
+    name: 'conversation.hero.dashboard',
+    inject: injected,
+  }, HomeDashboard))
 }

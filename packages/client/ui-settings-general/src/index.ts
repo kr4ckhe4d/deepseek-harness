@@ -3,6 +3,12 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-settings'
+import { PROFILE_SETTINGS_NAMESPACE, ProfileSettingsSchema } from './profile-settings.ts'
+
+export {
+  displayNameOf, initialsOf, PROFILE_SETTINGS_NAMESPACE, ProfileSettingsSchema,
+  type ProfileSettings,
+} from './profile-settings.ts'
 
 /** Durable settings namespace for product-wide GUI onboarding facts. */
 const ONBOARDING_SETTINGS_NAMESPACE = 'ui-onboarding'
@@ -22,6 +28,10 @@ export function apply(ctx: Context): void {
     settingsCtx.settings.register(
       ONBOARDING_SETTINGS_NAMESPACE,
       OnboardingSettingsSchema,
+    )
+    settingsCtx.settings.register(
+      PROFILE_SETTINGS_NAMESPACE,
+      ProfileSettingsSchema,
     )
   })
 }

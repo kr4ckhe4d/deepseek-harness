@@ -1,7 +1,25 @@
-/* Trigger row label (the shell's button provides layout/colors; the label
- * only guards against overflow during the sidebar collapse crossfade). */
+/* Trigger row content: the initials avatar plus the display-name label (the
+ * shell's button provides layout/colors; the label only guards against
+ * overflow during the sidebar collapse crossfade). */
 
 .triggerLabel {
   overflow: hidden;
   white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Initials avatar chip: 24px circle, module fill, caption ink. */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }

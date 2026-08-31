@@ -26,6 +26,15 @@ Working checklist for the Claude-Desktop-style shell on branch `feature/desktop-
 - [x] Bilingual README for `apps/desktop` and Agent Note `.agents/notes/implemented/feature/2026-08-31-desktop-electron-shell.md`, with pairing sidecars recorded.
 - [x] `tsc --noEmit` and repo oxlint clean for `apps/desktop`; work committed on the branch.
 
+## Milestone 4 — Claude-Desktop-style home & chrome
+
+- [x] Profile settings: `ui-profile` namespace (full name + nickname) registered host-side by ui-settings-general; two commit-on-blur Profile rows on the Settings General page edit it (pending drafts also commit on unmount).
+- [x] Personalized hero greeting: serif time-of-day greeting ("What's up next, {name}?") once a name is set, chosen by local-time band + day parity from eight bilingual templates; stock headline otherwise.
+- [x] Home usage dashboard: new `conversation.hero.dashboard` slot on the blank-session hero, filled by ui-settings-usage with a compact Overview/Models card sharing the Settings page's store (tiles, streaks, heatmap, model chart, All/30d/7d).
+- [x] Sidebar account footer: the settings trigger is now an account row (initials avatar + display name, "Local user" fallback) opening a popover menu — Settings, Language (jumps to General), Get help — before the modal.
+- [x] Sidebar New pill: ⌘N / Ctrl+N hint on the wide New Session bar plus a document-level binding (effective in the desktop shell; browsers reserve the chord).
+- [x] Rebuilt all 162 client bundles, verified live in the browser (greeting, both card tabs, account flow, profile persistence across restarts); 518 tests green across the touched packages, client typecheck and lint clean, client slot catalog regenerated, READMEs and Agent Note updated bilingually.
+
 ## Deferred (recorded, intentionally out of this pass)
 
 - Installer packaging (electron-builder dmg/nsis/AppImage) and code signing.
@@ -40,3 +49,4 @@ Working checklist for the Claude-Desktop-style shell on branch `feature/desktop-
 - 2026-08-31: scaffolded `apps/desktop`; Electron 44 installed with its binary via the new `allowBuilds` entry.
 - 2026-08-31: backend spawn debugged through two real failures — Electron-as-Node breaks the HMR row's loader internals (fixed: spawn the system `node`), and tsx resolves tsconfig from the child cwd so workspace imports fell back to stale built lib when the workspace was `$HOME` (fixed: pin `TSX_TSCONFIG_PATH` to the repo `tsconfig.base.json`).
 - 2026-08-31: smoke run green end-to-end; typecheck, lint, and the 11 unit tests pass; docs and Agent Note written.
+- 2026-08-31: desktop-style home shipped across four existing client packages (no new package): profile settings + serif greeting + hero usage dashboard + account footer menu + New pill shortcut. Two real bugs found while verifying in the browser: a profile draft typed then closed with Escape vanished (fixed: commit pending drafts on field unmount), and the dashboard card first shipped with a light-layer token in dark mode (fixed: the composer's `--dsw-specific-input-major`). Existing trigger/apply/snapshot tests updated with the behavior they describe.

@@ -23,6 +23,11 @@ import {
 import type { SidebarRootComponentProps } from './contract/slots.ts'
 import css from './SidebarRoot.module.css'
 
+/** Whether the shortcut hint should read as the Command chord. */
+function isApplePlatform(): boolean {
+  return /Mac|iPhone|iPad/.test(globalThis.navigator.platform)
+}
+
 /** Wide-content unmount delay; matches the 150ms wide-content fade-out. */
 const COLLAPSE_SETTLE_MS = 150
 
@@ -60,6 +65,19 @@ export function SidebarRoot({
   // Wide content stays mounted while the collapse animates (fading via
   // .collapsed .wide), unmounts at settle, and remounts right away on expand.
   const [settled, setSettled] = useState(collapsed)
+  // Cmd/Ctrl+N starts a New Session where the runtime lets the page see the
+  // chord (the desktop shell's menu, or browsers that do not reserve it).
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'n') return
+      if (event.shiftKey || event.altKey) return
+      event.preventDefault()
+      startSession()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => { document.removeEventListener('keydown', onKeyDown) }
+  }, [startSession])
+
   useEffect(() => {
     if (!collapsed) { setSettled(false); return }
     const timer = window.setTimeout(() => { setSettled(true) }, COLLAPSE_SETTLE_MS)
@@ -196,6 +214,11 @@ export function SidebarRoot({
         >
           <IconNewChatOutline16 size={wide ? 14 : 18} />
           {wide && <span className={clsx(css.newSessionLabel, css.wide)}>{t('session.new')}</span>}
+          {wide && (
+            <kbd className={css.newSessionKbd}>
+              {t(isApplePlatform() ? 'session.new.shortcut.mac' : 'session.new.shortcut.other')}
+            </kbd>
+          )}
         </button>
       </Tooltip>
 

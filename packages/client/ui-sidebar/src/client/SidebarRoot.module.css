@@ -291,6 +291,21 @@
   white-space: nowrap;
 }
 
+/* With a trailing hint the wide bar left-aligns its icon + label. */
+.newSession:has(.newSessionKbd) {
+  justify-content: flex-start;
+}
+
+/* Trailing shortcut hint on the wide New Session bar. */
+.newSessionKbd {
+  margin-left: auto;
+  color: var(--dsw-alias-label-caption);
+  font-family: var(--ds-font-family-code);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+}
+
 .collapsed .newSessionLabel {
   max-width: 0;
 }

@@ -105,6 +105,30 @@ export function apply(ctx: Context): void {
   const submissionPolicy = new ComposerSubmissionPolicy(
     ctx.settingsScope.bind<ConversationSettings>({ namespace: CONVERSATION_SETTINGS_NAMESPACE }),
   )
+  // The durable profile section ui-settings-general registers; this plugin
+  // only reads the greeting name, so it binds the wire-known namespace with
+  // a defensive decode instead of importing another plugin's values.
+  const profileScope = ctx.settingsScope.bind<{ fullName?: string; nickname?: string }>({
+    namespace: 'ui-profile',
+    decode: (section) => {
+      if (typeof section !== 'object' || section === null) return undefined
+      const record = section as Record<string, unknown>
+      return {
+        ...typeof record.fullName === 'string' ? { fullName: record.fullName } : {},
+        ...typeof record.nickname === 'string' ? { nickname: record.nickname } : {},
+      }
+    },
+  })
+  const greetingName = {
+    getSnapshot: (): string | undefined => {
+      const profile = profileScope.getSnapshot().value
+      const nickname = profile?.nickname?.trim() ?? ''
+      if (nickname !== '') return nickname
+      const fullName = profile?.fullName?.trim() ?? ''
+      return fullName !== '' ? fullName : undefined
+    },
+    subscribe: (listener: () => void) => profileScope.subscribe(listener),
+  }
 
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
     name: 'settings.general.item',
@@ -185,10 +209,12 @@ export function apply(ctx: Context): void {
       'conversation.hero.brand.mark': { kind: 'single', scope: 'root' },
       'conversation.hero.workspace': { kind: 'single', scope: 'root' },
       'conversation.hero.agentPreset': { kind: 'single', scope: 'root' },
+      'conversation.hero.dashboard': { kind: 'single', scope: 'root' },
     },
     inject: (sessionId: SessionId | undefined): ConversationInjected => ({
       hooks: {
         composerBlock: sessionId === undefined ? ABSENT_BLOCK : composerBlocks.storeFor(sessionId),
+        greetingName,
       },
       selectWorkspace: async (workspaceId) => {
         const nextId = await workspaceNavigation.connectWorkspace(workspaceId)
