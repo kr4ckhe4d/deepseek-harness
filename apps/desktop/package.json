@@ -1,0 +1,22 @@
+{
+  "name": "@deepseek-ai/dsh-desktop",
+  "description": "Desktop application shell: an Electron window over the dsh web GUI, launched through the supported dsh web profile",
+  "version": "0.1.2-alpha.2",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.mjs",
+  "scripts": {
+    "build": "tsdown",
+    "dev": "npm run build && electron .",
+    "smoke": "npm run build && DSH_DESKTOP_SMOKE=1 electron .",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "electron": "^44.0.0",
+    "tsdown": "^0.22.2",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3"
+  }
+}
