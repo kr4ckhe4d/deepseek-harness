@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps, ReactNode } from 'react'
-import { act, cleanup, fireEvent, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionListState, SessionSnapshot } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { WorkspaceSnapshot, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
@@ -121,6 +121,10 @@ function mount(
     composerBlock?: { reason: string }
     /** Mutable view ledger used by registration-order regressions. */
     viewTabs?: ViewTab[]
+    /** Chat home path; absent leaves chat mode unavailable (pre-ready Host). */
+    chatHome?: string
+    /** Records the chat-mode connect the toggle requests. */
+    startChat?: () => Promise<void>
   } = {},
 ) {
   const root = sid('root')
@@ -293,6 +297,8 @@ function mount(
     useProjection: (() => undefined),
     useComposerBlock: select => select(options.composerBlock),
     useGreetingName: select => select(undefined),
+    startChat: options.startChat ?? (() => Promise.resolve()),
+    chatHomePath: () => options.chatHome,
     useInput,
     inputActions,
     renderSlot,
@@ -323,6 +329,52 @@ describe('Hero chrome', () => {
     expect(brandMarkOwner.size).toBe(34)
     expect(brandMarkOwner.className).toBeTypeOf('string')
     expect(renderSlot.mock.calls[0]?.[2]?.fallback).toBeTruthy()
+  })
+})
+
+describe('Hero session mode', () => {
+  /** The blank-session hero for a session sitting in `cwd`. */
+  const heroAt = (cwd: string, options: Record<string, unknown> = {}) => mount(
+    sessionSnapshotOf({ blank: true }),
+    [{ ...workspace('one'), path: cwd, sessionIds: [SID] }],
+    undefined,
+    { summaryBlank: true, ...options },
+  )
+
+  it('starts in Code mode: the workspace chip and the dashboard seat stay', () => {
+    const b = heroAt('/projects/one', { chatHome: '/home/u' })
+    expect(b.view.getByRole('tab', { name: '代码' }).getAttribute('aria-selected')).toBe('true')
+    expect(b.view.getByRole('tab', { name: '聊天' }).getAttribute('aria-selected')).toBe('false')
+    expect(b.view.getByRole('button', { name: '选择工作区' })).toBeTruthy()
+    expect(b.slotCalls).toContain('conversation.hero.dashboard')
+  })
+
+  it('reads Chat mode off the session cwd, hiding the chip and the dashboard', () => {
+    const b = heroAt('/home/u', { chatHome: '/home/u' })
+    expect(b.view.getByRole('tab', { name: '聊天' }).getAttribute('aria-selected')).toBe('true')
+    expect(b.view.queryByRole('button', { name: '选择工作区' })).toBeNull()
+    // Chat has no project to report on, so the usage card stays off.
+    expect(b.slotCalls).not.toContain('conversation.hero.dashboard')
+    expect(b.view.getByRole('textbox').getAttribute('data-placeholder')).toBe('今天我能帮你做什么？')
+  })
+
+  it('connects the chat home when Chat is chosen from Code', async () => {
+    const startChat = vi.fn(() => Promise.resolve())
+    const b = heroAt('/projects/one', { chatHome: '/home/u', startChat })
+    fireEvent.click(b.view.getByRole('tab', { name: '聊天' }))
+    await waitFor(() => { expect(startChat).toHaveBeenCalledOnce() })
+  })
+
+  it('leaves the Chat toggle inert while chat mode already holds', () => {
+    const startChat = vi.fn(() => Promise.resolve())
+    const b = heroAt('/home/u', { chatHome: '/home/u', startChat })
+    fireEvent.click(b.view.getByRole('tab', { name: '聊天' }))
+    expect(startChat).not.toHaveBeenCalled()
+  })
+
+  it('offers no Chat mode before the Host home is known', () => {
+    const b = heroAt('/projects/one')
+    expect(b.view.getByRole('tab', { name: '聊天' }).hasAttribute('disabled')).toBe(true)
   })
 })
 

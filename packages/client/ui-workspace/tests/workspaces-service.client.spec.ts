@@ -132,7 +132,20 @@ class FakeWorkspaces implements IWorkspaces {
     }))
   }
 
-  declare readonly create: IWorkspaces['create']
+  /** Scripted create; the default registers nothing and echoes a view. */
+  onCreate: IWorkspaces['create'] = async input => ({
+    workspaceId: wid('created'),
+    path: input.path,
+    title: input.path.split('/').at(-1) ?? input.path,
+    sessionIds: [],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  })
+
+  create(input: { path: string }): Promise<WorkspaceView> {
+    return this.onCreate(input)
+  }
+
   declare readonly rename: IWorkspaces['rename']
   declare readonly delete: IWorkspaces['delete']
   declare readonly insertBefore: IWorkspaces['insertBefore']
@@ -185,6 +198,8 @@ class FakeDirectoryPicker {
 interface BenchOptions {
   readonly workspaces?: WorkspaceSnapshot
   readonly sessions?: SessionListState
+  /** Host home fact; null scripts the pre-ready state (home unknown). */
+  readonly home?: string | null
 }
 
 function bench(options: BenchOptions = {}) {
@@ -192,11 +207,13 @@ function bench(options: BenchOptions = {}) {
   const directoryPicker = new FakeDirectoryPicker()
   const workspaces = new FakeWorkspaces(options.workspaces ?? workspaceState([], [], 'pending'))
   const sessions = new FakeSessions(options.sessions ?? sessionState([], undefined, 'pending'))
+  const home = options.home === null ? undefined : options.home ?? '/home/u'
   const uiWorkspace = new UiWorkspaceService(
     ctx,
     directoryPicker.remote,
     workspaces,
     sessions as unknown as ISessions,
+    () => ({ home, isLoopback: true }),
   )
   return { ctx, directoryPicker, sessions, uiWorkspace, workspaces }
 }
@@ -207,6 +224,40 @@ async function flush(): Promise<void> {
 }
 
 describe('UiWorkspaceService', () => {
+  it('registers the Host home on first use, then opens its blank Session', async () => {
+    const b = bench({ workspaces: workspaceState(), sessions: sessionState() })
+    const created: string[] = []
+    b.workspaces.onCreate = async (input) => {
+      created.push(input.path)
+      return { ...workspace('chats'), path: input.path }
+    }
+    expect(b.uiWorkspace.chatHomePath()).toBe('/home/u')
+    const sessionId = await b.uiWorkspace.connectChatHome()
+    expect(created).toEqual(['/home/u'])
+    // Chat provisions no directory: the Host home always exists.
+    expect(b.directoryPicker.callsOf('createDirectory')).toEqual([])
+    // The pushed list has not caught up, so the blank Session is created directly.
+    expect(b.sessions.create).toHaveBeenCalledWith({ workspaceId: wid('chats') })
+    expect(sessionId).toBe(sid('created-chats'))
+  })
+
+  it('reuses a registered home workspace through the normal connect path', async () => {
+    const blank = sid('chat-blank')
+    const chats: WorkspaceView = { ...workspace('chats', [blank]), path: '/home/u' }
+    const b = bench({
+      workspaces: workspaceState([chats]),
+      sessions: sessionState([summary('chat-blank', { blank: true, cwd: '/home/u' })]),
+    })
+    await expect(b.uiWorkspace.connectChatHome()).resolves.toBe(blank)
+    expect(b.sessions.create).not.toHaveBeenCalled()
+  })
+
+  it('rejects before the ready frame supplies the Host home', async () => {
+    const b = bench({ home: null })
+    expect(b.uiWorkspace.chatHomePath()).toBeUndefined()
+    await expect(b.uiWorkspace.connectChatHome()).rejects.toThrow('Host home unknown')
+  })
+
   it('reuses only an unarchived member blank and coalesces concurrent creation', async () => {
     const b = bench()
     const memberBlank = sid('member-blank')

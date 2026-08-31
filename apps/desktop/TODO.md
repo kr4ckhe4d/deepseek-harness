@@ -35,6 +35,15 @@ Working checklist for the Claude-Desktop-style shell on branch `feature/desktop-
 - [x] Sidebar New pill: ⌘N / Ctrl+N hint on the wide New Session bar plus a document-level binding (effective in the desktop shell; browsers reserve the chord).
 - [x] Rebuilt all 162 client bundles, verified live in the browser (greeting, both card tabs, account flow, profile persistence across restarts); 518 tests green across the touched packages, client typecheck and lint clean, client slot catalog regenerated, READMEs and Agent Note updated bilingually.
 
+## Milestone 5 — Chat and Code session modes
+
+- [x] Chat home seam: `ctx.uiWorkspace.chatHomePath()` / `connectChatHome()` register the Host home directory as a Workspace on first use (idempotent by canonical path; an already-registered home keeps its title).
+- [x] Hero mode toggle: Chat / Code segmented control leading the hero row; Chat starts a Session with no folder prompt, Code opens the Workspace picker anchored on the Code button.
+- [x] Chat presentation: Workspace chip and usage-dashboard seat hidden, composer placeholder swapped to "How can I help you today?".
+- [x] Mode is derived from the Session's Workspace path (no durable flag), so reopening a chat Session lands in Chat mode.
+- [x] Draft and images carry across a mode switch (shared `openConnected` tail with `selectWorkspace`).
+- [x] 9 new tests (4 service, 5 component); 609 tests green across the touched packages; typecheck, lint, catalog, and bilingual docs done.
+
 ## Deferred (recorded, intentionally out of this pass)
 
 - Installer packaging (electron-builder dmg/nsis/AppImage) and code signing.
@@ -42,6 +51,7 @@ Working checklist for the Claude-Desktop-style shell on branch `feature/desktop-
 - `dsh://` deep-link routing beyond focusing the window.
 - Native push notifications driven by session events (the web GUI's own notifications work once permission is granted).
 - Packaged-app backend launch (today the shell launches the in-repo source vector; a packaged build needs the installed `dsh` bin instead).
+- A dedicated `~/Chats` directory for chat sessions instead of the Host home: blocked on a host-side provisioning verb, because the composed native `directoryPicker` refuses `createDirectory` (only the `browse` capability implements it).
 
 ## Done log
 
@@ -49,4 +59,5 @@ Working checklist for the Claude-Desktop-style shell on branch `feature/desktop-
 - 2026-08-31: scaffolded `apps/desktop`; Electron 44 installed with its binary via the new `allowBuilds` entry.
 - 2026-08-31: backend spawn debugged through two real failures — Electron-as-Node breaks the HMR row's loader internals (fixed: spawn the system `node`), and tsx resolves tsconfig from the child cwd so workspace imports fell back to stale built lib when the workspace was `$HOME` (fixed: pin `TSX_TSCONFIG_PATH` to the repo `tsconfig.base.json`).
 - 2026-08-31: smoke run green end-to-end; typecheck, lint, and the 11 unit tests pass; docs and Agent Note written.
+- 2026-08-31: Chat/Code modes shipped. Three real bugs found while verifying in the browser: `~/Chats` provisioning silently failed (the native directory picker has no `createDirectory`, so chat now uses the Host home), the Chat toggle created a Session but never opened it (`startChat` skipped the open/draft-migration tail `selectWorkspace` already had), and the Code button did nothing in chat mode (the picker's anchor ref lived on the hidden Workspace chip).
 - 2026-08-31: desktop-style home shipped across four existing client packages (no new package): profile settings + serif greeting + hero usage dashboard + account footer menu + New pill shortcut. Two real bugs found while verifying in the browser: a profile draft typed then closed with Escape vanished (fixed: commit pending drafts on field unmount), and the dashboard card first shipped with a light-layer token in dark mode (fixed: the composer's `--dsw-specific-input-major`). Existing trigger/apply/snapshot tests updated with the behavior they describe.

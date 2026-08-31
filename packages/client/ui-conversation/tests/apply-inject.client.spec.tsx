@@ -35,7 +35,7 @@ async function bench() {
   const runtime = await SlotTestRuntime.create()
   runtime.ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
   const connectWorkspace = vi.fn(async () => ROOT)
-  runtime.ctx.provide('uiWorkspace', { connectWorkspace } as never)
+  runtime.ctx.provide('uiWorkspace', { connectWorkspace, connectChatHome: vi.fn(async () => ROOT), chatHomePath: () => undefined } as never)
   const sessionFake = sessionFakeFor()
   await runtime.sessions.add({
     id: ROOT,

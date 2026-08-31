@@ -131,9 +131,12 @@ function WidthHandle(props: {
 export function ConversationRoot({
   sessionId, useSession, useSessions, useSessionPendingInteraction,
   useWorkspaces, useConversation, useInput, useComposerBlock, useGreetingName,
-  renderSlot, renderSlotChain, selectWorkspace, t,
+  renderSlot, renderSlotChain, selectWorkspace, startChat, chatHomePath, t,
 }: ConversationRootProps) {
   const greetingName = useGreetingName(name => name)
+  // Chat mode: the current blank session lives in the auto-provisioned chat
+  // home, or a connect to it is in flight after the toggle was clicked.
+  const [chatPending, setChatPending] = useState(false)
   const session = useSession(s => s)
   const pendingInteraction = useSessionPendingInteraction(snapshot =>
     sessionId === undefined ? undefined : snapshot.get(sessionId))
@@ -291,15 +294,54 @@ export function ConversationRoot({
           ? undefined
           : workspaceLabel(cwd)))
 
+  // The session sits in the chat home when its cwd (or the workspace being
+  // connected) is the auto-provisioned chat path; the pending flag bridges
+  // the click-to-connect window.
+  const chatHome = chatHomePath()
+  const chatActive = chatPending
+    || (chatHome !== undefined && (pendingWorkspace?.path ?? sessionWorkspace?.path ?? cwd) === chatHome)
+
   const heroWorkspaceRow = (
     <div className={css.heroWorkspaceRow}>
-      <WorkspaceChip
-        buttonRef={pickerAnchor}
-        label={chipTitle}
-        menuOpen={pickerOpen}
-        onClick={() => { setPickerOpen(open => !open) }}
-        t={t}
-      />
+      <div className={css.modeToggle} role="tablist" aria-label={t('hero.mode.label')}>
+        <button
+          type="button"
+          role="tab"
+          className={css.modeButton}
+          aria-selected={chatActive}
+          disabled={chatHome === undefined}
+          onClick={() => {
+            if (chatActive) return
+            setChatPending(true)
+            void startChat()
+              .catch(() => { /* connect failures keep the picker flow */ })
+              .finally(() => { setChatPending(false) })
+          }}
+        >
+          {t('hero.mode.chat')}
+        </button>
+        <button
+          // In chat mode the workspace chip is hidden, so this button is the
+          // picker's anchor; otherwise the chip keeps it.
+          ref={chatActive ? pickerAnchor : undefined}
+          type="button"
+          role="tab"
+          className={css.modeButton}
+          aria-selected={!chatActive}
+          onClick={() => { setPickerOpen(open => chatActive ? true : !open) }}
+        >
+          {t('hero.mode.code')}
+        </button>
+      </div>
+      {!chatActive && (
+        <WorkspaceChip
+          buttonRef={pickerAnchor}
+          label={chipTitle}
+          menuOpen={pickerOpen}
+          onClick={() => { setPickerOpen(open => !open) }}
+          t={t}
+        />
+      )}
       {renderSlot('conversation.hero.workspace', {
         open: pickerOpen,
         anchorRef: pickerAnchor,
@@ -341,7 +383,7 @@ export function ConversationRoot({
         // block keeps the model seat live because choosing a model is how the
         // user clears it.
         ? { blocked: composerBlock, placeholder: composerBlock.reason }
-        : hero ? { placeholder: t('placeholder.hero') } : {}),
+        : hero ? { placeholder: t(chatActive ? 'placeholder.chatHero' : 'placeholder.hero') } : {}),
     overlay: sessionId === undefined ? undefined : renderSlot('conversation.input.overlay', {}),
     leftItems: zone === undefined ? null : renderSlot('conversation.input.left', zone),
     rightItems: zone === undefined ? null : renderSlot('conversation.input.right', zone),
@@ -355,7 +397,7 @@ export function ConversationRoot({
       {hero && heroWorkspaceRow}
       {zone !== undefined && renderSlot('conversation.input.dock', zone)}
       {inputBar}
-      {hero && renderSlot('conversation.hero.dashboard', {})}
+      {hero && !chatActive && renderSlot('conversation.hero.dashboard', {})}
     </div>
   )
 

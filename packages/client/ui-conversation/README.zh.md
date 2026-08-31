@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`ui-conversation` 拥有与 target 无关的 Conversation 组装和共享浏览器 shell。它消费 Session Controller 的 `SessionEventLikeEntry` feed，通过 `ctx.uiConversation` 暴露不依赖 React 的 registry 与逐 Session binding，并通过 `ctx.uiSession` 提供 `useConversation`、`useInput` 和 `inputActions` 标准 props。它还拥有按会话的持久化图片 URL 缓存：`ctx.uiConversation.imageUrl(sessionId, attachment)` 为每个附件解析一个经会话授权的浏览器 URL，并随 Session binding 释放而撤销，因此所有 Conversation target 共享一次 `session.attachment` 读取。Chat 等具体 target 位于独立 package，由各自 package 注册 Definition、snapshot builder、View 和 renderer。空白会话 hero 会依据持久化的 `ui-profile` 小节个性化标题（用户在设置中填写称呼后展示按时段变化的衬线问候语，否则保持原标题），并在 composer 下方开设可选的 `conversation.hero.dashboard` 卡片座位供其他插件填充。
+`ui-conversation` 拥有与 target 无关的 Conversation 组装和共享浏览器 shell。它消费 Session Controller 的 `SessionEventLikeEntry` feed，通过 `ctx.uiConversation` 暴露不依赖 React 的 registry 与逐 Session binding，并通过 `ctx.uiSession` 提供 `useConversation`、`useInput` 和 `inputActions` 标准 props。它还拥有按会话的持久化图片 URL 缓存：`ctx.uiConversation.imageUrl(sessionId, attachment)` 为每个附件解析一个经会话授权的浏览器 URL，并随 Session binding 释放而撤销，因此所有 Conversation target 共享一次 `session.attachment` 读取。Chat 等具体 target 位于独立 package，由各自 package 注册 Definition、snapshot builder、View 和 renderer。空白会话 hero 会依据持久化的 `ui-profile` 小节个性化标题（用户在设置中填写称呼后展示按时段变化的衬线问候语，否则保持原标题），并在 composer 下方开设可选的 `conversation.hero.dashboard` 卡片座位供其他插件填充。hero 行首是「聊天 / 代码」模式切换：聊天在固定的 chat home Workspace 中运行，因此开始一个会话无须选择文件夹（同时隐藏 Workspace 标签与仪表盘座位），代码则打开 Workspace 选择器。
 
 ## 目录
 

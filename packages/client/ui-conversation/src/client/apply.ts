@@ -69,6 +69,8 @@ interface WorkspaceNavigation {
   connectWorkspace(
     workspaceId: Parameters<ConversationInjected['selectWorkspace']>[0],
   ): Promise<SessionId>
+  connectChatHome(): Promise<SessionId>
+  chatHomePath(): string | undefined
 }
 
 /** Resolve the session-scoped Conversation action face, failing loud. */
@@ -128,6 +130,27 @@ export function apply(ctx: Context): void {
       return fullName !== '' ? fullName : undefined
     },
     subscribe: (listener: () => void) => profileScope.subscribe(listener),
+  }
+
+  // Carrying the draft across a Workspace or mode switch keeps a half-typed
+  // message with the user instead of with the Session they left.
+  const openConnected = (fromId: SessionId | undefined, nextId: SessionId): void => {
+    if (fromId !== undefined && nextId !== fromId) {
+      const from = inputHub.shell(fromId)
+      const draft = from.snapshot.draft
+      const imageIds = from.snapshot.imageIds
+      const next = inputHub.shell(nextId)
+      if (imageIds.length === 0 || next.addImages(imageIds)) {
+        if (draft !== '') {
+          next.setDraft(draft)
+          from.setDraft('')
+        }
+        if (imageIds.length > 0) {
+          for (const id of imageIds) from.removeImage(id)
+        }
+      }
+    }
+    sessions.open(nextId)
   }
 
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
@@ -216,24 +239,10 @@ export function apply(ctx: Context): void {
         composerBlock: sessionId === undefined ? ABSENT_BLOCK : composerBlocks.storeFor(sessionId),
         greetingName,
       },
+      startChat: async () => { openConnected(sessionId, await workspaceNavigation.connectChatHome()) },
+      chatHomePath: () => workspaceNavigation.chatHomePath(),
       selectWorkspace: async (workspaceId) => {
-        const nextId = await workspaceNavigation.connectWorkspace(workspaceId)
-        if (sessionId !== undefined && nextId !== sessionId) {
-          const from = inputHub.shell(sessionId)
-          const draft = from.snapshot.draft
-          const imageIds = from.snapshot.imageIds
-          const next = inputHub.shell(nextId)
-          if (imageIds.length === 0 || next.addImages(imageIds)) {
-            if (draft !== '') {
-              next.setDraft(draft)
-              from.setDraft('')
-            }
-            if (imageIds.length > 0) {
-              for (const id of imageIds) from.removeImage(id)
-            }
-          }
-        }
-        sessions.open(nextId)
+        openConnected(sessionId, await workspaceNavigation.connectWorkspace(workspaceId))
       },
     }),
   }, ConversationRoot)

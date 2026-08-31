@@ -1,7 +1,7 @@
 /** Workspace archive and directory UI capability. */
 
 import { Service, type Context } from '@deepseek-ai/cordis'
-import type { ClientRemote, DirectoryListing, RemoteFailure } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ClientRemote, DirectoryListing, RemoteFailure, RemoteHostFacts } from '@deepseek-ai/dsh-api-remotes/client'
 import type {
   ISessions,
   SessionListState,
@@ -48,6 +48,20 @@ export interface UiWorkspace {
    * @returns created absolute path.
    */
   createDirectory(path: string, name: string): Promise<string>
+  /**
+   * Absolute path of the chat home Workspace: the Host home directory, which
+   * always exists, so chat mode provisions nothing. Undefined before the
+   * ready frame supplies the home.
+   * @returns the chat home path, or undefined while the home is unknown.
+   */
+  chatHomePath(): string | undefined
+  /**
+   * Resolve the blank Session of the chat home workspace, registering the
+   * Host home directory as a Workspace on first use. Chat Sessions run in
+   * this fixed Workspace, so starting one never asks for a folder.
+   * @returns a Session already addressable through the Session Controller.
+   */
+  connectChatHome(): Promise<SessionId>
 }
 
 declare module '@deepseek-ai/cordis' {
@@ -82,9 +96,34 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     private readonly directoryPicker: ClientRemote['directoryPicker'],
     private readonly workspaces: IWorkspaces,
     private readonly sessions: ISessions,
+    private readonly hostFacts: () => RemoteHostFacts,
   ) {
     super(ctx, 'uiWorkspace')
     ctx.effect(() => this.watchNavigation(), 'ui-workspace: Workspace navigation policy')
+  }
+
+  chatHomePath(): string | undefined {
+    return this.hostFacts().home
+  }
+
+  async connectChatHome(): Promise<SessionId> {
+    const home = this.chatHomePath()
+    if (home === undefined) {
+      throw new Error('uiWorkspace.connectChatHome: Host home unknown before the ready frame')
+    }
+    const registered = this.workspaces.list.getSnapshot().items
+      .find(item => item.path === home)
+    if (registered !== undefined) return this.connectWorkspace(registered.workspaceId)
+    // Registration is idempotent by canonical path, so a `home` spelling that
+    // differs from the stored one resolves the same Workspace instead of
+    // adding a second row.
+    const view = await this.workspaces.create({ path: home })
+    // The pushed list may not include the new row yet; create the blank
+    // Session directly instead of re-resolving through the snapshot.
+    const known = this.workspaces.list.getSnapshot().items
+      .find(item => item.workspaceId === view.workspaceId)
+    if (known !== undefined) return this.connectWorkspace(view.workspaceId)
+    return this.sessions.create({ workspaceId: view.workspaceId })
   }
 
   async connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId> {
