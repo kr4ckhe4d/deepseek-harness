@@ -7,8 +7,9 @@
 ## 运行
 
 ```sh
-pnpm --filter @deepseek-ai/dsh-desktop run dev    # build main+preload, then launch Electron
-pnpm --filter @deepseek-ai/dsh-desktop run smoke  # headless-style boot check: loads the GUI and exits 0
+pnpm --filter @deepseek-ai/dsh-desktop run dev      # build main+preload, then launch Electron
+pnpm --filter @deepseek-ai/dsh-desktop run smoke    # headless-style boot check: loads the GUI and exits 0
+pnpm --filter @deepseek-ai/dsh-desktop run package  # build the self-contained macOS .app
 ```
 
 环境变量：
@@ -29,6 +30,19 @@ pnpm --filter @deepseek-ai/dsh-desktop run smoke  # headless-style boot check: l
 
 纯逻辑部分（就绪行解析、窗口几何规范化与夹取）位于 `src/url-line.ts` 与 `src/window-state.ts`，由根 vitest 套件（`apps/desktop/tests`）覆盖。
 
+<a id="packaging"></a>
+## 打包
+
+`npm run package` 产出 `release/mac-arm64/DeepSeek Harness.app`，它自带后端，无需安装 Node、也无需仓库检出即可运行。这由三步支撑。
+
+**闭包。** `apps/desktop/runtime` 是一个纯依赖的 deploy root，列出 web profile 能到达的每个工作区包——沿依赖*与* peer 依赖传递闭合；harness 各包把 `@deepseek-ai/cordis` 及其插件声明为 peer，而 `pnpm deploy --prod` 不会代它们提供。用 `pnpm run gen-desktop-runtime-closure` 重新生成，不要手工编辑。
+
+**暂存。** [`build/stage-backend.mjs`](build/stage-backend.mjs) 用 pnpm 的 hoisted linker 把该 root 部署到 `staged-backend/`，随后把每个逃出闭包的符号链接替换为真实副本并断言不再有残留——vendored Cordis 包是 `link:` override，pnpm 会把它们暂存为爬向仓库 `vendor/` 的相对符号链接。它随后恢复开发态安装，因为 `pnpm deploy --prod` 会把工作区标记为 production。
+
+**放置。** [`build/after-pack.cjs`](build/after-pack.cjs) 把暂存好的闭包复制进 `Contents/Resources/backend`。electron-builder 的 `extraResources` 无法承载它：它只会带上清单，并静默丢弃其下的 `node_modules` 树。
+
+运行时，已打包应用在 Electron 自带的 Node 下（`ELECTRON_RUN_AS_NODE`）运行该闭包的 launcher，使用 `userData` 下私有的 `DSH_HOME`，其中预置了 `patchReload` 为 `startup` 的 web profile。随附模板要求 `live`，那会让 launcher 挂载 `cordis-plugin-hmr`，而该服务需要 `--expose-internals`——在 Electron 的 Node 下不可用，且在没有重建 watcher 的构建里毫无意义。
+
 ## 有意的边界
 
-该包为 `private: true`，不发布。安装包打包、代码签名、自动更新与 `dsh://` 深链路由记录为 [TODO.md](TODO.md) 中的延后工作。
+该包为 `private: true`，不发布。该 `.app` 未签名，因此分发到另一台机器的副本会被 Gatekeeper 拒绝，直到用 Developer ID 完成签名与公证。代码签名、`dmg`/安装包目标、自动更新与 `dsh://` 深链路由记录为 [TODO.md](TODO.md) 中的延后工作。

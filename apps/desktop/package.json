@@ -9,12 +9,15 @@
     "build": "tsdown",
     "dev": "npm run build && electron .",
     "smoke": "npm run build && DSH_DESKTOP_SMOKE=1 electron .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "stage:backend": "node build/stage-backend.mjs",
+    "package": "npm run build && npm run stage:backend && electron-builder --mac"
   },
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.0.0",
     "electron": "^44.0.0",
+    "electron-builder": "^26.15.3",
     "tsdown": "^0.22.2",
     "tsx": "^4.23.13",
     "typescript": "^6.0.3"

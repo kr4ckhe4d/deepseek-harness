@@ -1,0 +1,37 @@
+# Packaging for the self-contained desktop application. The backend closure is
+# staged by `npm run stage:backend` (a pnpm deploy of dsh-desktop-runtime-closure)
+# and shipped verbatim under Resources/backend, where main.ts runs its launcher
+# with Electron's own Node. It stays outside the asar archive because the
+# launcher resolves sibling packages from the real filesystem.
+appId: ai.deepseek.dsh.desktop
+productName: DeepSeek Harness
+copyright: Copyright © 2026 DeepSeek
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - static/**/*
+  - package.json
+
+# The backend closure is placed by build/after-pack.cjs, not extraResources:
+# electron-builder drops node_modules trees carried that way.
+afterPack: build/after-pack.cjs
+
+asar: true
+
+# Electron derives its user-data directory from the manifest name, and the
+# workspace name is scoped, which would nest that directory under a bare
+# `@deepseek-ai` folder. The packaged manifest carries an unscoped name.
+extraMetadata:
+  name: dsh-desktop
+
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dir
+      arch: [arm64]
+  # Unsigned local builds: signing and notarization need a Developer ID.
+  identity: null

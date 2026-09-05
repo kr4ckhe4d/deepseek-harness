@@ -7,13 +7,27 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { once } from 'node:events'
 import { createInterface } from 'node:readline'
-import path from 'node:path'
 import { parseWebUrlLine } from './url-line.ts'
+
+/**
+ * How to invoke the `dsh` launcher. The two carriers differ only here: a
+ * development checkout runs the TypeScript sources under a real Node with
+ * tsx, while a packaged application runs the bundled closure's built
+ * JavaScript under Electron's own Node.
+ */
+export interface BackendLaunch {
+  /** Executable that carries the launcher. */
+  command: string
+  /** Arguments naming the launcher, before this app's own flags. */
+  args: readonly string[]
+  /** Environment additions the carrier needs. */
+  env: Readonly<Record<string, string>>
+}
 
 /** How the backend is launched and where its agent sessions root. */
 export interface BackendOptions {
-  /** Absolute repository root holding apps/cli (the in-repo launcher). */
-  repoRoot: string
+  /** The launcher carrier for this build (see {@link BackendLaunch}). */
+  launch: BackendLaunch
   /** Directory the spawned profile treats as the default workspace root. */
   workspaceDir: string
   /** Milliseconds to wait for the readiness line before failing. */
@@ -36,32 +50,21 @@ export interface Backend {
 const STOP_GRACE_MS = 5_000
 
 /**
- * Spawn `dsh web --no-open --port 0` and resolve once it prints its
- * readiness line.
+ * Spawn the web profile (`--no-open --port 0`) through the given carrier and
+ * resolve once it prints its readiness line.
  *
  * @param options - launch directories, timeout, and lifecycle callbacks.
  * @returns the running backend with its authenticated URL.
  */
 export async function startBackend(options: BackendOptions): Promise<Backend> {
-  const bin = path.join(options.repoRoot, 'apps/cli/src/bin.ts')
-  // Resolve tsx from this package so the loader is found no matter which
-  // directory the child runs in (the child's cwd is the workspace root).
-  const tsxLoader = import.meta.resolve('tsx/esm')
-  // A real Node binary, not Electron-as-Node: the web profile's HMR row needs
-  // the loader's module internals, which Electron's patched module system
-  // does not expose.
-  const node = process.env.DSH_DESKTOP_NODE ?? 'node'
   const child = spawn(
-    node,
-    ['--import', tsxLoader, bin, 'web', '--no-open', '--port', '0'],
+    options.launch.command,
+    [...options.launch.args, '--profile', 'web', '--no-open', '--port', '0'],
     {
       cwd: options.workspaceDir,
       env: {
         ...process.env,
-        // tsx discovers tsconfig from the child's cwd; the workspace root is
-        // arbitrary, so pin the repo config that maps workspace packages to
-        // their TypeScript sources.
-        TSX_TSCONFIG_PATH: path.join(options.repoRoot, 'tsconfig.base.json'),
+        ...options.launch.env,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     },

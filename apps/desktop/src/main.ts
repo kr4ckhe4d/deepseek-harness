@@ -9,7 +9,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { startBackend, type Backend } from './backend.ts'
+import { startBackend, type Backend, type BackendLaunch } from './backend.ts'
 import { installMenu } from './menu.ts'
 import {
   clampToDisplays, DEFAULT_WINDOW_STATE, MIN_WINDOW_SIZE, normalizeWindowState, type WindowState,
@@ -17,8 +17,10 @@ import {
 
 const APP_DIR = path.dirname(fileURLToPath(import.meta.url))
 const STATIC_DIR = path.join(APP_DIR, '../static')
-/** apps/desktop/dist -> repository root. */
+/** apps/desktop/dist -> repository root (development carrier only). */
 const REPO_ROOT = path.join(APP_DIR, '../../..')
+/** The bundled backend closure's launcher, relative to the packaged resources. */
+const PACKAGED_LAUNCHER = 'backend/node_modules/@deepseek-ai/dsh/lib/bin.js'
 const SMOKE = process.env.DSH_DESKTOP_SMOKE === '1'
 const READY_TIMEOUT_MS = 120_000
 /** Rolling backend log lines kept for the error page. */
@@ -152,6 +154,67 @@ function newChat(): void {
   void mainWindow.loadURL(`${backendOrigin}/`)
 }
 
+/**
+ * The launcher carrier for this build. A packaged application runs the
+ * bundled closure's built JavaScript under Electron's own Node, so it needs
+ * no Node installation; a development checkout runs the TypeScript sources
+ * under a real Node with tsx, because the development profile's live patch
+ * reload mounts an HMR service that requires loader internals Electron does
+ * not expose.
+ *
+ * @returns the command, launcher arguments, and environment additions.
+ */
+function backendLaunch(): BackendLaunch {
+  if (app.isPackaged) {
+    return {
+      command: process.execPath,
+      args: [path.join(process.resourcesPath, PACKAGED_LAUNCHER)],
+      env: { ELECTRON_RUN_AS_NODE: '1', DSH_HOME: packagedDshHome() },
+    }
+  }
+  return {
+    command: process.env.DSH_DESKTOP_NODE ?? 'node',
+    args: ['--import', import.meta.resolve('tsx/esm'), path.join(REPO_ROOT, 'apps/cli/src/bin.ts')],
+    // tsx discovers tsconfig from the child's cwd, which is the user's
+    // workspace root; pin the repo config that maps workspace packages to
+    // their TypeScript sources.
+    env: { TSX_TSCONFIG_PATH: path.join(REPO_ROOT, 'tsconfig.base.json') },
+  }
+}
+
+/**
+ * The packaged application's private dsh home, seeded with a web profile
+ * whose patch reload is `startup`. The shipped template asks for `live`,
+ * which makes the launcher mount `cordis-plugin-hmr`, and that service needs
+ * `--expose-internals` — unavailable under Electron's Node. A packaged app
+ * has no rebuild watcher, so `startup` is also the honest setting.
+ *
+ * @returns the DSH_HOME path to hand the packaged backend.
+ */
+function packagedDshHome(): string {
+  const home = path.join(app.getPath('userData'), 'dsh-home')
+  const profile = path.join(home, 'profiles', 'web')
+  const manifestPath = path.join(profile, 'package.json')
+  let manifest: Record<string, unknown> = {
+    name: 'dsh-profile-web',
+    private: true,
+    dependencies: {},
+    dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } },
+  }
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as Record<string, unknown>
+  } catch {
+    // No profile yet (first launch) or an unreadable one: the template above
+    // stands, and the write below establishes it.
+  }
+  const dsh = (manifest.dsh ??= {}) as Record<string, unknown>
+  const profileManifest = (dsh.profile ??= {}) as Record<string, unknown>
+  profileManifest.patchReload = 'startup'
+  fs.mkdirSync(profile, { recursive: true })
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+  return home
+}
+
 async function bootBackend(): Promise<void> {
   loadLocalPage('loading')
   const attachUrl = process.env.DSH_DESKTOP_URL
@@ -160,7 +223,7 @@ async function bootBackend(): Promise<void> {
       backend = { url: new URL(attachUrl), stop: () => Promise.resolve() }
     } else {
       backend = await startBackend({
-        repoRoot: REPO_ROOT,
+        launch: backendLaunch(),
         workspaceDir: process.env.DSH_DESKTOP_WORKSPACE ?? os.homedir(),
         readyTimeoutMs: READY_TIMEOUT_MS,
         onLog: (line) => {
@@ -195,10 +258,25 @@ function grantPermissions(origin: string): void {
   })
 }
 
+/**
+ * End the smoke run, releasing the backend first. `app.exit` skips
+ * `before-quit`, so exiting straight from a smoke probe would leave the
+ * spawned backend running with init as its parent.
+ *
+ * @param code - process exit status.
+ */
+async function exitSmoke(code: number): Promise<void> {
+  const pending = backend
+  quitting = true
+  backend = undefined
+  await pending?.stop()
+  app.exit(code)
+}
+
 function runSmoke(): void {
   const deadline = setTimeout(() => {
     console.error('smoke: timed out waiting for the web GUI to load')
-    app.exit(1)
+    void exitSmoke(1)
   }, READY_TIMEOUT_MS + 60_000)
   const probe = (): void => {
     const contents = mainWindow?.webContents
@@ -213,7 +291,7 @@ function runSmoke(): void {
       void contents.executeJavaScript('document.title').then((title: unknown) => {
         clearTimeout(deadline)
         console.log(`smoke: loaded ${url} title=${String(title)}`)
-        app.exit(0)
+        void exitSmoke(0)
       })
     })
   }

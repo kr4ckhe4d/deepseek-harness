@@ -11,6 +11,9 @@ packages:
   # Deploy root of the single-exe build: a pure dependency manifest whose
   # closure is what the exe bundles and what the Python runtime distributes.
   - python/sdk-runtime
+  # Deploy root of the desktop application: the closure staged into the
+  # packaged app's Resources and run by Electron's own Node.
+  - apps/desktop/runtime
 
 # Vendored framework packages keep their upstream semver ranges, while local
 # builds must resolve those matching names to this workspace's pinned sources.
@@ -32,6 +35,9 @@ peerDependencyRules:
 allowBuilds:
   # Electron's postinstall downloads the platform runtime binary for apps/desktop.
   electron: true
+  # Pulled in by electron-builder for Windows installers, which the desktop
+  # application does not produce; its script is not needed.
+  electron-winstaller: false
   esbuild: true
   lefthook: true
   # Cross-platform boundary for the persistent PTY backend, including ConPTY on Windows.
