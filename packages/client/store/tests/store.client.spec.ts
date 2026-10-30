@@ -150,6 +150,28 @@ describe('createSnapshotStore', () => {
     expect(revived.getSnapshot().a.n).toBe(42)
   })
 
+  it('fills top-level fields missing from a stored object record with their initial values', () => {
+    const backing = new Map([['spec-older', JSON.stringify({ a: { n: 7 } })]])
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => backing.get(k) ?? null,
+      setItem: (k: string, v: string) => { backing.set(k, v) },
+      removeItem: (k: string) => { backing.delete(k) },
+    })
+    const revived = createSnapshotStore(init(), { persist: { name: 'spec-older' } })
+    expect(revived.getSnapshot()).toEqual({ a: { n: 7 }, b: { list: ['x'] } })
+  })
+
+  it('rehydrates array state whole', () => {
+    const backing = new Map([['spec-list', JSON.stringify(['y', 'z'])]])
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => backing.get(k) ?? null,
+      setItem: (k: string, v: string) => { backing.set(k, v) },
+      removeItem: (k: string) => { backing.delete(k) },
+    })
+    const revived = createSnapshotStore<string[]>(['x'], { persist: { name: 'spec-list' } })
+    expect(revived.getSnapshot()).toEqual(['y', 'z'])
+  })
+
   it('reports rehydration failures without preventing store creation', () => {
     const failure = new Error('storage read failed')
     vi.stubGlobal('localStorage', {

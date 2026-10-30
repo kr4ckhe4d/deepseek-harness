@@ -142,6 +142,9 @@ export function createSnapshotStore<T>(
  * draft becomes {0:'h',1:'e',...}) — not fixable via merge/deserialize options
  * because the corruption happens before serialization. Storage failures
  * (quota, private mode) only disable persistence, never break the store.
+ * Rehydration shallow-merges a stored plain object over a plain-object initial
+ * state, so a record written before a top-level field existed reads that
+ * field's initial value; primitive and array state rehydrate whole.
  */
 function attachPersistence<T>(api: StoreApi<T>, name: string): void {
   // Non-browser runs (node e2e booting the client tree) have no localStorage:
@@ -151,7 +154,10 @@ function attachPersistence<T>(api: StoreApi<T>, name: string): void {
   try {
     const raw = localStorage.getItem(name)
     if (raw !== null) {
-      api.setState(devFreeze(JSON.parse(raw) as T), true)
+      const stored: unknown = JSON.parse(raw)
+      const initial = api.getState()
+      const next = isPlainObject(initial) && isPlainObject(stored) ? { ...initial, ...stored } : stored
+      api.setState(devFreeze(next as T), true)
     }
   } catch (error) {
     console.error(`snapshot store '${name}' rehydration failed:`, error)
@@ -163,6 +169,11 @@ function attachPersistence<T>(api: StoreApi<T>, name: string): void {
       console.error(`snapshot store '${name}' persistence failed:`, error)
     }
   })
+}
+
+/** Whether a value is a non-array, non-null object (the JSON object case). */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /** Deep-freeze draftable wholesale-set state outside production: set() bypasses immer's freeze. */

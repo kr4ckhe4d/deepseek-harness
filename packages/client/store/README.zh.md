@@ -32,6 +32,7 @@ kind: "package-library"
 <a id="known-limitations-and-deferred-work"></a>
 
 - **持久化仅限浏览器本地**——持久化 store 使用 `localStorage` 中的 JSON；非浏览器运行时会禁用持久化，本包也不提供跨设备同步。
+- **重新水合只补全顶层字段**——存储的对象记录会浅合并到纯对象初始状态之上，因此缺失的顶层字段读取其初始值；缺失的嵌套字段或字段类型变更仍需要新的持久化键。
 
 
 <a id="dev-note"></a>

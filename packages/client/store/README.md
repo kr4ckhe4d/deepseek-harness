@@ -32,6 +32,7 @@ None; the stores neither assemble nor send model requests.
 <a id="known-limitations-and-deferred-work"></a>
 
 - **Persistence is browser-local** — persisted stores use JSON in `localStorage`; non-browser runtimes disable persistence, and the package provides no cross-device synchronization.
+- **Rehydration fills only top-level fields** — a stored object record is shallow-merged over a plain-object initial state, so a missing top-level field reads its initial value; a missing nested field or a changed field type still requires a new persist key.
 
 
 <a id="dev-note"></a>
